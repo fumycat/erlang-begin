@@ -1,6 +1,6 @@
 -module(rec).
 
--export([fib/1, fac/1, b_print/2, b_print_s/2, digit_sum/1, rev_dig/1, triangle/1]).
+-export([fib/1, fac/1, b_print/2, b_print_s/2, b_print_t/2, digit_sum/1, rev_dig/1, triangle/1]).
 
 % 1
 fib(N) when not is_number(N); N < 0 ->
@@ -23,20 +23,17 @@ b_print(A, B) when A > B ->
 b_print(A, B) ->
     b_print_front(A, B).
 
-
 b_print_front(A, B) when A - 1 == B -> ok;
 b_print_front(A, B) ->
     io:format("~p~n", [A]),
     b_print_front(A + 1, B).
-
 
 b_print_back(A, B) when A + 1 == B -> ok;
 b_print_back(A, B) ->
     io:format("~p~n", [A]),
     b_print_back(A - 1, B).
 
-
-% B second variant
+% B 2
 b_print_s(A, B) when A == B -> io:format("~p~n", [A]);
 b_print_s(A, B) when A < B ->
     io:format("~p~n", [A]),
@@ -44,6 +41,17 @@ b_print_s(A, B) when A < B ->
 b_print_s(A, B) when A > B ->
     io:format("~p~n", [A]),
     b_print_s(A - 1, B).
+
+
+% B 3
+% b_print_t(A, B) when A == B -> io:format("~p~n", [A]);
+b_print_t(A, B) ->
+    io:format("~p~n", [A]),
+    if
+        A < B -> b_print_t(A + 1, B);
+        A > B -> b_print_t(A - 1, B);
+        A == B -> ok
+    end.
 
 
 % E: Сумма цифр числа
