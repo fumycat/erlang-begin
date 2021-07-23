@@ -1,4 +1,4 @@
--module(sockt).
+-module(xserver).
 
 -export([main/0, client/1]).
 
@@ -36,7 +36,7 @@ client(Socket) ->
 
 server(ServerSocket) ->
     {ok, Socket} = gen_tcp:accept(ServerSocket),
-    spawn(sockt, client, [Socket]),
+    spawn(xserver, client, [Socket]),
     server(ServerSocket).
 
 main() ->
