@@ -6,15 +6,23 @@
         <<"HTTP/1.1 404 Not Found\r\nContent-Length: 35\r\n\r\n<html><body>Not "
           "found</body></html>">>).
 
-create_response(Str) ->
-    Data = list_to_binary(Str),
+create_response(Data, Headers) ->
     H = list_to_binary("HTTP/1.1 200 OK\r\nContent-Length: "
                        ++ integer_to_list(byte_size(Data))
-                       ++ "\r\n\r\n"),
-    <<H/binary, Data/binary>>.
+                       ++ "\r\n"),
+    O = list_to_binary(lists:join("\r\n", Headers)),
+    <<H/binary, O/binary, <<"\r\n\r\n">>/binary, Data/binary>>.
+
+get_file_content(Fname) ->
+    {ok, Data} = file:read_file(Fname),
+    Data.
 
 route(<<"/">>) ->
-    create_response("<html><body>Bienvenue</body></html>");
+    create_response(get_file_content("index.html"), []);
+route(<<"/cat.jpg">>) ->
+    create_response(get_file_content("cat.jpg"), ["Content-Type: image/jpeg;"]);
+route(<<"/info.html">>) ->
+    create_response(<<"<html><body>Info page</body></html>">>, []);
 route(_) ->
     ?not_found.
 
