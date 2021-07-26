@@ -18,9 +18,9 @@ get_file_content(Fname) ->
     Data.
 
 route(<<"/">>) ->
-    create_response(get_file_content("index.html"), []);
+    create_response(get_file_content("static/index.html"), []);
 route(<<"/cat.jpg">>) ->
-    create_response(get_file_content("cat.jpg"), ["Content-Type: image/jpeg;"]);
+    create_response(get_file_content("static/cat.jpg"), ["Content-Type: image/jpeg;"]);
 route(<<"/info.html">>) ->
     create_response(<<"<html><body>Info page</body></html>">>, []);
 route(_) ->

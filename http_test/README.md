@@ -1,10 +1,10 @@
 # Http Server
 
 
+    rebar3 shell
+
 ```erlang
-1> c(xserver).
-{ok,xserver}
-2> xserver:main().
+1> xserver:main().
 ```
 
 <http://127.0.0.1:8080>
