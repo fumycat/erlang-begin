@@ -10,8 +10,9 @@ create_response(Data, Headers) ->
     H = list_to_binary("HTTP/1.1 200 OK\r\nContent-Length: "
                        ++ integer_to_list(byte_size(Data))
                        ++ "\r\n"),
-    O = list_to_binary(lists:join("\r\n", Headers)),
-    <<H/binary, O/binary, <<"\r\n\r\n">>/binary, Data/binary>>.
+    % O = list_to_binary(lists:join("\r\n", Headers)),
+    O = list_to_binary(lists:foldl(fun(E, S) -> S ++ E ++ "\r\n" end, "", Headers)),
+    <<H/binary, O/binary, <<"\r\n">>/binary, Data/binary>>.
 
 get_file_content(Fname) ->
     {ok, Data} = file:read_file(Fname),
