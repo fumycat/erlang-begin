@@ -1,5 +1,12 @@
 # Http Server
 
+## Run
+
+Start database
+
+    docker start mdb1
+
+Run server
 
     rebar3 shell
 
@@ -10,7 +17,7 @@
 <http://127.0.0.1:8080>
 
 
-# Database Logs
+## Database Logs
 
 Connect
 
@@ -30,3 +37,15 @@ Show
     | 2021-08-04 11:47:39 | 127.0.0.1 | GET    | /cat.jpg   |    200 |
     +---------------------+-----------+--------+------------+--------+
     6 rows in set (0.001 sec)
+
+## Docker database setup
+
+    docker run -p 127.0.0.1:3306:3306  --name mdb1 -e MARIADB_ROOT_PASSWORD=secureasf -d mariadb:latest
+
+and then
+
+    mysql -u root -p -h 127.0.0.1
+    
+```sql
+> CREATE DATABASE ws;
+```
