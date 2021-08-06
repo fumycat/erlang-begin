@@ -27,6 +27,9 @@ iex(1)> XqlTest.run
 
 ## 2. Run erlang webserver
 
+    docker start mdb1
+    iex -S mix
+
 ```elixir
 iex(2)> Main.start
 ```
