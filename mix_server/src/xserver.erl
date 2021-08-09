@@ -48,7 +48,8 @@ server(ServerSocket, DbPid) ->
     server(ServerSocket, DbPid).
 
 main() ->
-    {ok, Pid} = mysql:start_link([{host, "127.0.0.1"}, {user, "root"},
+    SqlHost = os:getenv("DBHOST"),
+    {ok, Pid} = mysql:start_link([{host, SqlHost}, {user, "root"},
                                   {password, "135"}, {database, "ws"}]),
     ok = mysql:query(Pid, "CREATE TABLE IF NOT EXISTS ws.cons (time DATETIME, ip VARCHAR(40), method VARCHAR(8), path TEXT, status INTEGER);"),
     {ok, ServerSocket} = gen_tcp:listen(8080, [binary, {active, false}, {reuseaddr, true}]),
