@@ -11,7 +11,7 @@ docker run -d --name some-mongo -p 27017:27017 mongo
 docker start some-mongo # start database container
 export VK_TOKEN=token
 iex -S mix
-> Main.mongo
+> Main.start
 ```
 
 ## Check results
