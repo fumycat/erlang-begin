@@ -2,8 +2,6 @@
 
 -export([main/1, client/3]).
 
--record(cn, {time, ip, method, path, status}).
-
 -define(not_found,
         <<"HTTP/1.1 404 Not Found\r\nContent-Length: 35\r\n\r\n<html><body>Not "
           "found</body></html>">>).
@@ -25,6 +23,8 @@ route(<<"/cat.jpg">>) ->
     {200, create_response(get_file_content("static/cat.jpg"), ["Content-Type: image/jpeg;"])};
 route(<<"/info.html">>) ->
     {200, create_response(<<"<html><body>Info page</body></html>">>, [])};
+route(<<"/show.html">>) ->
+    {200, create_response(render_info(), [])};
 route(_) ->
     {404, ?not_found}.
 
@@ -49,16 +49,26 @@ server(ServerSocket, DbPid, Mnesia) ->
     server(ServerSocket, DbPid, Mnesia).
 
 log_con([When, Adr, Method, Path, Status], MySQLPid, Mnesia) ->
-    % Print to console
     io:format("~p ~p ~p ~p ~p~n", [When, Adr, Method, Path, Status]),
 
-    % MySQL
-    ok =
-    mysql:query(MySQLPid,
-                "INSERT INTO ws.cons VALUE (?, ?, ?, ?, ?)",
-            [When, Adr, Method, Path, Status]),
+    case MySQLPid of
+        false -> 
+            _ = ok;
+        _ ->
+            ok =
+            mysql:query(MySQLPid,
+                        "INSERT INTO ws.cons VALUE (?, ?, ?, ?, ?)",
+                    [When, Adr, Method, Path, Status])
+    end,
     
-    % TODO mnesia
+    case Mnesia of
+        true ->
+            Uwhen = calendar:datetime_to_gregorian_seconds(When),
+            R = mnesia:transaction(fun() -> mnesia:write({con, Uwhen, Adr, Method, Path, Status}) end),
+            io:format("Mnesia write ~p~n", [R]);
+        _ ->
+            _ = ok
+    end,
     ok.
 
 mne_start(Config) ->
@@ -66,16 +76,14 @@ mne_start(Config) ->
         {_, {true}} ->
             mnesia:create_schema([node()]),
             mnesia:start(),
-            % mnesia : create_table ( con , [ ] ) .
-            A = mnesia:create_table(con, [{attributes, record_info(fields, cn)}]),
-            io:format("~p~n", [A]),
+            A = mnesia:create_table(con, [{attributes, [time, ip, method, path, status]}, {disc_copies, [node()]}]),
+            io:format("Create mnesia table ~p~n", [A]),
             true;
         _ ->
             false
     end.
 
 mysql_start(Config) ->
-    % SqlHost = os:getenv("DBHOST"),
     case Config of
         {{true, Host, User, Pass, Db}, {_}} ->
             {ok, Pid} =
@@ -92,17 +100,31 @@ mysql_start(Config) ->
             false
     end.
 
+view_row([]) -> "";
+view_row([H | T]) ->
+    {_, Utime, Host, Method, Path, Status} = H,
+    view_row(T) ++ lists:flatten(io_lib:format("~p ~s ~s ~s ~p<br>", [Utime, Host, Method, Path, Status])).
+
+render_info() ->
+    SomeDate = 63796349103,
+    {atomic, Q} = mnesia:transaction(
+        fun() -> mnesia:select(con, [{{con, '$1', '_', '_', '_', '_'}, [{'<', '$1', SomeDate}], ['$_']}])
+    end),
+
+    {atomic, Q2} = mnesia:transaction(
+        fun() -> mnesia:select(con, [{{con, '$1', '_', '_', '_', '_'}, [{'>', '$1', SomeDate}], ['$_']}])
+    end),
+
+    C = list_to_binary(view_row(Q)),
+    C2 = list_to_binary(view_row(Q2)),
+
+    S1 = <<"<p>Logs before some hardcoded date</p><br>">>,
+    S2 = <<"<p>Logs after some hardcoded date</p><br>">>,
+    <<S1/binary, C/binary, S2/binary, C2/binary>>.
+
 main(Config) ->
     DbPid = mysql_start(Config),
-    Mnesia = false,
-    % Mnesia = mne_start(Config),
-    % WW = calendar:local_time(),
+    Mnesia = mne_start(Config),
     
-    % A = mnesia:transaction(fun() -> mnesia:write({con, WW, "testip", "GET", "/", 200}) end),
-    % io:format("~p~n", [A]),
-
-    % mnesia:transaction(fun() -> mnesia:match_object({con, '_', '_', '_', '_', '_'}) end).
-    % Mnesia.
-     
     {ok, ServerSocket} = gen_tcp:listen(8080, [binary, {active, false}, {reuseaddr, true}]),
     server(ServerSocket, DbPid, Mnesia).

@@ -28,3 +28,16 @@ root@b4fb3905760e:/mix_server# iex -S mix
 
 iex(1)> Main.start
 ```
+
+4. Check logs
+
+MySQL 
+
+```
+mysql -p -u root -h 127.0.0.1
+> select * from ws.cons;
+```
+
+Mnesia
+
+Go to http://localhost:8080/show.html
