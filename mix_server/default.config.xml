@@ -1,0 +1,10 @@
+<settings>
+    <mySql enabled="true">
+        <host>127.0.0.1</host>
+        <username>root</username>
+        <password>12345</password>
+        <databaseName>ws</databaseName>
+    </mySql>
+
+    <mnesia enabled="true"/>    
+</settings>

@@ -9,10 +9,13 @@
 docker start mdb1
 ```
 
-2. Update MySQL ipaddress ENV in Dockerfile
+2. Change config
 
 ```bash
+mv default.config.xml config.xml
+
 docker inspect mdb1 | grep IPAddress
+vim config.xml
 ```
 
 3. Build and run

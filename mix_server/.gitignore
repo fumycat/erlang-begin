@@ -24,3 +24,9 @@ mix_server-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# Mnesia files
+Mnesia*
+
+# Config file
+config.xml

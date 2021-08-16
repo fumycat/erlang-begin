@@ -1,12 +1,7 @@
 defmodule Main do
-  @moduledoc """
-  Documentation for `Main`.
-  """
+  @moduledoc false
 
-  @doc """
-  Run web server
-  """
   def start do
-    :xserver.main
+    DbConfig.read_config |> :xserver.main
   end
 end
