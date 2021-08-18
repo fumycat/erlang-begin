@@ -30,3 +30,6 @@ Mnesia*
 
 # Config file
 config.xml
+
+# Elm
+/elm-stuff/

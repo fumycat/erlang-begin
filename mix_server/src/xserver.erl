@@ -1,6 +1,6 @@
 -module(xserver).
 
--export([main/1, client/3]).
+-export([main/1, client/3, make_json/1]).
 
 -define(not_found,
         <<"HTTP/1.1 404 Not Found\r\nContent-Length: 35\r\n\r\n<html><body>Not "
@@ -25,6 +25,12 @@ route(<<"/info.html">>) ->
     {200, create_response(<<"<html><body>Info page</body></html>">>, [])};
 route(<<"/show.html">>) ->
     {200, create_response(render_info(), [])};
+route(<<"/get_json">>) ->
+    {200, create_response(api(), ["Content-Type: application/json;"])};
+route(<<"/stats.html">>) ->
+    {200, create_response(get_file_content("static/stats.html"), [])};
+route(<<"/elm.min.js">>) ->
+    {200, create_response(get_file_content("static/elm.min.js"), [])};
 route(_) ->
     {404, ?not_found}.
 
@@ -40,7 +46,7 @@ client(Socket, DbPid, Mnesia) ->
 
     gen_tcp:send(Socket, Html),
     gen_tcp:close(Socket),
-    
+
     log_con([When, AdrString, "GET", Path, Status], DbPid, Mnesia).
 
 server(ServerSocket, DbPid, Mnesia) ->
@@ -52,19 +58,20 @@ log_con([When, Adr, Method, Path, Status], MySQLPid, Mnesia) ->
     io:format("~p ~p ~p ~p ~p~n", [When, Adr, Method, Path, Status]),
 
     case MySQLPid of
-        false -> 
+        false ->
             _ = ok;
         _ ->
             ok =
-            mysql:query(MySQLPid,
-                        "INSERT INTO ws.cons VALUE (?, ?, ?, ?, ?)",
-                    [When, Adr, Method, Path, Status])
+                mysql:query(MySQLPid,
+                            "INSERT INTO ws.cons VALUE (?, ?, ?, ?, ?)",
+                            [When, Adr, Method, Path, Status])
     end,
-    
+
     case Mnesia of
         true ->
             Uwhen = calendar:datetime_to_gregorian_seconds(When),
-            R = mnesia:transaction(fun() -> mnesia:write({con, Uwhen, Adr, Method, Path, Status}) end),
+            R = mnesia:transaction(fun() -> mnesia:write({con, Uwhen, Adr, Method, Path, Status})
+                                   end),
             io:format("Mnesia write ~p~n", [R]);
         _ ->
             _ = ok
@@ -76,7 +83,9 @@ mne_start(Config) ->
         {_, {true}} ->
             mnesia:create_schema([node()]),
             mnesia:start(),
-            A = mnesia:create_table(con, [{attributes, [time, ip, method, path, status]}, {disc_copies, [node()]}]),
+            A = mnesia:create_table(con,
+                                    [{attributes, [time, ip, method, path, status]},
+                                     {disc_copies, [node()]}]),
             io:format("Create mnesia table ~p~n", [A]),
             true;
         _ ->
@@ -100,20 +109,61 @@ mysql_start(Config) ->
             false
     end.
 
-view_row([]) -> "";
+make_json(L) ->
+    {_, Utime, Host, Method, Path, Status} = L,
+    {{Year, Month, Day}, {Hour, Minute, Second}} =
+        calendar:gregorian_seconds_to_datetime(Utime),
+    StrTime =
+        lists:flatten(
+            io_lib:format("~4..0w-~2..0w-~2..0wT~2..0w:~2..0w:~2..0w",
+                          [Year, Month, Day, Hour, Minute, Second])),
+    #{date => list_to_binary(StrTime),
+      addr => list_to_binary(Host),
+      method => list_to_binary(Method),
+      path => Path,
+      status => Status}.
+
+api() ->
+    {atomic, Q} =
+        mnesia:transaction(fun() ->
+                              mnesia:select(con,
+                                            [{{con, '$1', '_', '_', '_', '_'},
+                                              [{'>', '$1', 0}],
+                                              ['$_']}])
+                           end),
+    case Q of
+        [] ->
+            jsone:encode(#{error => "empty"});
+        _ ->
+            ListOfMaps = lists:map(fun(X) -> make_json(X) end, Q),
+            jsone:encode(#{data => ListOfMaps})
+    end.
+
+view_row([]) ->
+    "";
 view_row([H | T]) ->
     {_, Utime, Host, Method, Path, Status} = H,
-    view_row(T) ++ lists:flatten(io_lib:format("~p ~s ~s ~s ~p<br>", [Utime, Host, Method, Path, Status])).
+    view_row(T)
+    ++ lists:flatten(
+           io_lib:format("~p ~s ~s ~s ~p<br>", [Utime, Host, Method, Path, Status])).
 
 render_info() ->
     SomeDate = 63796349103,
-    {atomic, Q} = mnesia:transaction(
-        fun() -> mnesia:select(con, [{{con, '$1', '_', '_', '_', '_'}, [{'<', '$1', SomeDate}], ['$_']}])
-    end),
+    {atomic, Q} =
+        mnesia:transaction(fun() ->
+                              mnesia:select(con,
+                                            [{{con, '$1', '_', '_', '_', '_'},
+                                              [{'<', '$1', SomeDate}],
+                                              ['$_']}])
+                           end),
 
-    {atomic, Q2} = mnesia:transaction(
-        fun() -> mnesia:select(con, [{{con, '$1', '_', '_', '_', '_'}, [{'>', '$1', SomeDate}], ['$_']}])
-    end),
+    {atomic, Q2} =
+        mnesia:transaction(fun() ->
+                              mnesia:select(con,
+                                            [{{con, '$1', '_', '_', '_', '_'},
+                                              [{'>', '$1', SomeDate}],
+                                              ['$_']}])
+                           end),
 
     C = list_to_binary(view_row(Q)),
     C2 = list_to_binary(view_row(Q2)),
@@ -125,6 +175,6 @@ render_info() ->
 main(Config) ->
     DbPid = mysql_start(Config),
     Mnesia = mne_start(Config),
-    
+
     {ok, ServerSocket} = gen_tcp:listen(8080, [binary, {active, false}, {reuseaddr, true}]),
     server(ServerSocket, DbPid, Mnesia).

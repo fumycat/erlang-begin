@@ -41,3 +41,4 @@ mysql -p -u root -h 127.0.0.1
 Mnesia
 
 Go to http://localhost:8080/show.html
+or http://localhost:8080/stats.html
