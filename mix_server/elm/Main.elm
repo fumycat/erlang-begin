@@ -75,10 +75,14 @@ viewCon : Conn -> Html Msg
 viewCon conn =
     Html.p []
         [ Html.text
-            (conn.date ++ " "
-                ++ conn.addr ++ " "
-                ++ conn.method ++ " "
-                ++ conn.path ++ " "
+            (conn.date
+                ++ " "
+                ++ conn.addr
+                ++ " "
+                ++ conn.method
+                ++ " "
+                ++ conn.path
+                ++ " "
                 ++ String.fromInt conn.status
             )
         ]

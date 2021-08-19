@@ -21,7 +21,6 @@ defmodule Main.MixProject do
   # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:myxql, "~> 0.5.0"},
       {:mysql, git: "https://github.com/mysql-otp/mysql-otp", tag: "1.7.0"},
       {:jsone, git: "https://github.com/sile/jsone", tag: "1.6.1"},
       {:sweet_xml, "~> 0.7.0"}
