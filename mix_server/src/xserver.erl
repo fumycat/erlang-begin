@@ -17,22 +17,24 @@ get_file_content(Fname) ->
     {ok, Data} = file:read_file(Fname),
     Data.
 
-route(<<"/">>) ->
+route("/") ->
     {200, create_response(get_file_content("static/index.html"), [])};
-route(<<"/cat.jpg">>) ->
-    {200, create_response(get_file_content("static/cat.jpg"), ["Content-Type: image/jpeg;"])};
-route(<<"/info.html">>) ->
-    {200, create_response(<<"<html><body>Info page</body></html>">>, [])};
-route(<<"/show.html">>) ->
-    {200, create_response(render_info(), [])};
-route(<<"/get_json">>) ->
+route("/get_json") ->
     {200, create_response(api(), ["Content-Type: application/json;"])};
-route(<<"/stats.html">>) ->
-    {200, create_response(get_file_content("static/stats.html"), [])};
-route(<<"/elm.min.js">>) ->
-    {200, create_response(get_file_content("static/elm.min.js"), [])};
-route(_) ->
-    {404, ?not_found}.
+route(Path) ->
+    StaticPath = "static/" ++ Path,
+    case filelib:is_regular(StaticPath) of
+        true ->
+            case filename:extension(Path) of
+                ".jpg" ->
+                    {200,
+                     create_response(get_file_content(StaticPath), ["Content-Type: image/jpeg;"])};
+                _ ->
+                    {200, create_response(get_file_content(StaticPath), [])}
+            end;
+        false ->
+            {404, ?not_found}
+    end.
 
 client(Socket, DbPid, Mnesia) ->
     {ok, Msg} = gen_tcp:recv(Socket, 0),
@@ -42,7 +44,7 @@ client(Socket, DbPid, Mnesia) ->
     AdrString = inet:ntoa(Adr),
     When = calendar:local_time(),
 
-    {Status, Html} = route(Path),
+    {Status, Html} = route(binary_to_list(Path)),
 
     gen_tcp:send(Socket, Html),
     gen_tcp:close(Socket),
@@ -78,39 +80,32 @@ log_con([When, Adr, Method, Path, Status], MySQLPid, Mnesia) ->
     end,
     ok.
 
-mne_start(Config) ->
-    case Config of
-        {_, {true}} ->
-            mnesia:create_schema([node()]),
-            mnesia:start(),
-            A = mnesia:create_table(con,
-                                    [{attributes, [time, ip, method, path, status]},
-                                     {disc_copies, [node()]}]),
-            io:format("Create mnesia table ~p~n", [A]),
-            true;
-        _ ->
-            false
-    end.
+mne_start({_, {true}}) ->
+    mnesia:create_schema([node()]),
+    mnesia:start(),
+    A = mnesia:create_table(con,
+                            [{attributes, [time, ip, method, path, status]},
+                             {disc_copies, [node()]}]),
+    io:format("Create mnesia table ~p~n", [A]),
+    true;
+mne_start(_) ->
+    false.
 
-mysql_start(Config) ->
-    case Config of
-        {{true, Host, User, Pass, Db}, {_}} ->
-            {ok, Pid} =
-                mysql:start_link([{host, binary_to_list(Host)},
-                                  {user, binary_to_list(User)},
-                                  {password, binary_to_list(Pass)},
-                                  {database, binary_to_list(Db)}]),
-            ok =
-                mysql:query(Pid,
-                            "CREATE TABLE IF NOT EXISTS ws.cons (time DATETIME, ip VARCHAR(40), "
-                            "method VARCHAR(8), path TEXT, status INTEGER);"),
-            Pid;
-        _ ->
-            false
-    end.
+mysql_start({{true, Host, User, Pass, Db}, {_}}) ->
+    {ok, Pid} =
+        mysql:start_link([{host, binary_to_list(Host)},
+                          {user, binary_to_list(User)},
+                          {password, binary_to_list(Pass)},
+                          {database, binary_to_list(Db)}]),
+    ok =
+        mysql:query(Pid,
+                    "CREATE TABLE IF NOT EXISTS ws.cons (time DATETIME, ip VARCHAR(40), "
+                    "method VARCHAR(8), path TEXT, status INTEGER);"),
+    Pid;
+mysql_start(_) ->
+    false.
 
-make_json(L) ->
-    {_, Utime, Host, Method, Path, Status} = L,
+make_json({_, Utime, Host, Method, Path, Status}) ->
     {{Year, Month, Day}, {Hour, Minute, Second}} =
         calendar:gregorian_seconds_to_datetime(Utime),
     StrTime =
@@ -138,39 +133,6 @@ api() ->
             ListOfMaps = lists:map(fun(X) -> make_json(X) end, Q),
             jsone:encode(#{data => ListOfMaps})
     end.
-
-view_row([]) ->
-    "";
-view_row([H | T]) ->
-    {_, Utime, Host, Method, Path, Status} = H,
-    view_row(T)
-    ++ lists:flatten(
-           io_lib:format("~p ~s ~s ~s ~p<br>", [Utime, Host, Method, Path, Status])).
-
-render_info() ->
-    SomeDate = 63796349103,
-    {atomic, Q} =
-        mnesia:transaction(fun() ->
-                              mnesia:select(con,
-                                            [{{con, '$1', '_', '_', '_', '_'},
-                                              [{'<', '$1', SomeDate}],
-                                              ['$_']}])
-                           end),
-
-    {atomic, Q2} =
-        mnesia:transaction(fun() ->
-                              mnesia:select(con,
-                                            [{{con, '$1', '_', '_', '_', '_'},
-                                              [{'>', '$1', SomeDate}],
-                                              ['$_']}])
-                           end),
-
-    C = list_to_binary(view_row(Q)),
-    C2 = list_to_binary(view_row(Q2)),
-
-    S1 = <<"<p>Logs before some hardcoded date</p><br>">>,
-    S2 = <<"<p>Logs after some hardcoded date</p><br>">>,
-    <<S1/binary, C/binary, S2/binary, C2/binary>>.
 
 main(Config) ->
     DbPid = mysql_start(Config),
