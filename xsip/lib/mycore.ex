@@ -1,4 +1,8 @@
 defmodule MyCore do
+  @moduledoc """
+    Sippet Core behaviour. All handlers are here.
+  """
+
   use Sippet.Core
 
   def receive_request(incoming_request, server_key) do
