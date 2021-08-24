@@ -10,6 +10,7 @@ defmodule XSip.Application do
 
     children = [
       ConfigAgent,
+      UsersAgent,
       Sippet.child_spec([name: :mystack]),
       Sippet.Transports.UDP.child_spec([name: :mystack])
     ]
