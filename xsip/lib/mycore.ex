@@ -7,13 +7,16 @@ defmodule MyCore do
 
   use Sippet.Core
 
-  def receive_request(incoming_request, server_key) do
+  def receive_request(incoming_request, _server_key) do
     # route the request to your UA or proxy process
 
-    IO.inspect(server_key)
-    IO.inspect(incoming_request)
+    # IO.inspect(server_key)
+    # IO.inspect(incoming_request)
 
     headers = Map.get(incoming_request, :headers)
+
+    IO.inspect(headers[:cseq])
+
     case headers[:cseq] do
       {_, :register} ->
         Logger.info("REGISTER request")
@@ -23,10 +26,24 @@ defmodule MyCore do
         resp = Sippet.Message.to_response(incoming_request, 200)
         Sippet.send(:mystack, resp)
 
-        _ ->
-          Logger.info("else")
-        end
+      {_, :invite} ->
+        Logger.info("INVITE request")
+        resp = Sippet.Message.to_response(incoming_request, 100)
+        Sippet.send(:mystack, resp)
+        resp = Sippet.Message.to_response(incoming_request, 180)
+        Sippet.send(:mystack, resp)
 
+        resp =
+          Sippet.Message.to_response(incoming_request, 200)
+          |> Sdp.put_body(Sdp.mock_sdp())
+
+        IO.inspect(resp)
+
+        Sippet.send(:mystack, resp)
+
+      _ ->
+        Logger.info("else")
+    end
   end
 
   def receive_response(incoming_response, client_key) do
