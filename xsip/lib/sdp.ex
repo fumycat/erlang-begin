@@ -30,6 +30,15 @@ defmodule Sdp do
 
   end
 
+
+  @doc """
+    TODO
+  """
+  @spec compose_sdp(keyword()) :: binary()
+  def compose_sdp(_kvs) do
+    "TODO"
+  end
+
   @doc """
     TODO
   """

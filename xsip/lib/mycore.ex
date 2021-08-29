@@ -28,6 +28,8 @@ defmodule MyCore do
 
       {_, :invite} ->
         Logger.info("INVITE request")
+        IO.inspect(incoming_request[:body])
+
         resp = Sippet.Message.to_response(incoming_request, 100)
         Sippet.send(:mystack, resp)
         resp = Sippet.Message.to_response(incoming_request, 180)
@@ -35,8 +37,9 @@ defmodule MyCore do
 
         resp =
           Sippet.Message.to_response(incoming_request, 200)
-          |> Sdp.put_body(Sdp.mock_sdp())
+          |> Sdp.put_body(Sdp.mock_sdp()) # ? jija
 
+        IO.puts(" response:")
         IO.inspect(resp)
 
         Sippet.send(:mystack, resp)
