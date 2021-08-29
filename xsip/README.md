@@ -1,3 +1,13 @@
 # Xsip
 
-**TODO: Add description**
+TODO: Add description.
+
+## Run
+
+    mix run --no-halt
+
+
+## Tests
+
+    mix test
+
