@@ -17,6 +17,20 @@ defmodule Sdp do
   end
 
   @doc """
+    Возвращает Keyword list с полями SDP. Возможны дубликаты ключей.
+  """
+  @spec parse_sdp_body(binary()) :: keyword()
+  def parse_sdp_body(body) do
+    lines = body |> String.split("\r\n", trim: true)
+
+    Enum.map(lines, fn x ->
+      [a, b] = String.split(x, "=")
+      {String.to_atom(a), b}
+    end)
+
+  end
+
+  @doc """
     TODO
   """
   @spec mock_sdp() :: binary()
