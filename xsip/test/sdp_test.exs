@@ -2,11 +2,11 @@ defmodule SdpTest do
   use ExUnit.Case
   doctest Sdp
 
-  test "parse sdp empty" do
+  test "parse_sdp_body empty" do
     assert Sdp.parse_sdp_body("") == []
   end
 
-  test "parse sdp something" do
+  test "parse_sdp_body ok" do
     assert Sdp.parse_sdp_body("v=0\r\nm=audio 12345 bla bla\r\nt=0 0") == [
              v: "0",
              m: "audio 12345 bla bla",
@@ -14,7 +14,7 @@ defmodule SdpTest do
            ]
   end
 
-  test "parse sdp duplicates ok" do
+  test "parse_sdp_body duplicates ok" do
     input = """
     v=0\r\n\
     o=Zoiper 1630120310317 1 IN IP4 192.168.0.104\r\n\
@@ -42,7 +42,20 @@ defmodule SdpTest do
     assert Sdp.parse_sdp_body(input) == expected
   end
 
-  test "parse sdp wrong order" do
+  test "parse_sdp_body order" do
     refute Sdp.parse_sdp_body("v=0\r\nt= 0 0") == [t: "0 0", v: "0"]
   end
+
+  test "compose_sdp ok" do
+    assert Sdp.compose_sdp([v: "0", a: "something", a: "another"]) == "v=0\r\na=something\r\na=another\r\n"
+  end
+
+  test "compose_sdp order" do
+    refute Sdp.compose_sdp([v: "0", a: "something", a: "another"]) == "a=something\r\na=another\r\nv=0\r\n"
+  end
+
+  test "compose_sdp empty" do
+    assert Sdp.compose_sdp([]) == ""
+  end
+
 end

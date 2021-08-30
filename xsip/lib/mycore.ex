@@ -25,7 +25,7 @@ defmodule MyCore do
         resp = Sippet.Message.to_response(incoming_request, 200)
         Sippet.send(:mystack, resp)
 
-      {cseq_num, :invite} ->
+      {_cseq_num, :invite} ->
         # IO.inspect(incoming_request[:body])
 
         {display_name, uri, params} = incoming_request.headers.to

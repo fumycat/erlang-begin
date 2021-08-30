@@ -33,11 +33,13 @@ defmodule Sdp do
 
 
   @doc """
-    TODO
+    Создает строку из keyword list с параметрами SDP.
   """
   @spec compose_sdp(keyword()) :: binary()
-  def compose_sdp(_kvs) do
-    "TODO"
+  def compose_sdp(kvs) do
+    List.foldl(kvs, "", fn {k, v}, acc ->
+      acc <> Atom.to_string(k) <> "=" <> v <> "\r\n"
+    end)
   end
 
   @doc """
