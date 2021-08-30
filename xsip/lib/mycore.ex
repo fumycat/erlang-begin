@@ -15,34 +15,50 @@ defmodule MyCore do
 
     headers = Map.get(incoming_request, :headers)
 
-    IO.inspect(headers[:cseq])
+    Logger.info(inspect(headers[:cseq]))
 
     case headers[:cseq] do
       {_, :register} ->
-        Logger.info("REGISTER request")
         # {:ok, response} = Sippet.DigestAuth.make_response(incoming_request, 401, "xsip")
         # Sippet.send(:mystack, response)
 
         resp = Sippet.Message.to_response(incoming_request, 200)
         Sippet.send(:mystack, resp)
 
-      {_, :invite} ->
-        Logger.info("INVITE request")
-        IO.inspect(incoming_request[:body])
+      {cseq_num, :invite} ->
+        # IO.inspect(incoming_request[:body])
 
-        resp = Sippet.Message.to_response(incoming_request, 100)
-        Sippet.send(:mystack, resp)
-        resp = Sippet.Message.to_response(incoming_request, 180)
-        Sippet.send(:mystack, resp)
+        {display_name, uri, params} = incoming_request.headers.to
+        params = Map.put(params, "tag", Sippet.Message.create_tag())
+
+        Sippet.Message.to_response(incoming_request, 100)
+        |> SippetUtils.send(:mystack)
+
+        Sippet.Message.to_response(incoming_request, 180)
+        |> Sippet.Message.put_header(:to, {display_name, uri, params})
+        |> SippetUtils.send(:mystack)
 
         resp =
           Sippet.Message.to_response(incoming_request, 200)
-          |> Sdp.put_body(Sdp.mock_sdp()) # ? jija
+          |> Sdp.put_sdp(Sdp.mock_sdp_whatever())
+          |> Sippet.Message.put_header(:to, {display_name, uri, params})
+          |> SippetUtils.send(:mystack)
 
-        IO.puts(" response:")
-        IO.inspect(resp)
+        [{_, dest_uri, _} | _] = incoming_request[:headers][:contact]
 
-        Sippet.send(:mystack, resp)
+
+        req1 =
+          Sippet.Message.build_request(:invite, dest_uri)
+          |> Sdp.put_sdp(Sdp.mock_sdp())
+          |> Map.put(:headers, resp[:headers])
+          |> Sippet.Message.put_header(:from, Sippet.Message.get_header(resp, :to))
+          |> Sippet.Message.put_header(:to, Sippet.Message.get_header(resp, :from))
+
+        # |> Sippet.Message.put_header(:cseq, {cseq_num + 1, :invite})
+        # |> Sippet.Message.put_header(:call_id, Sippet.Message.get_header(resp, :call_id))
+        # |> Sippet.Message.put_header(:via, Sippet.Message.get_header(resp, :via))
+
+        SippetUtils.send(req1, :mystack, true)
 
       _ ->
         Logger.info("else")
