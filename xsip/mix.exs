@@ -15,6 +15,14 @@ defmodule Xsip.MixProject do
   def application do
     [
       extra_applications: [:logger],
+      env: [
+        host: "192.168.0.104",
+        remote_host: "192.168.0.104",
+        port: 5061,
+        remote_port: 5060,
+        username: "1001",
+        secret: "1234"
+      ],
       mod: {XSip.Application, []}
     ]
   end
