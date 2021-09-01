@@ -8,6 +8,7 @@ defmodule XSip.Application do
   @impl true
   def start(_type, _args) do
     children = [
+      {SipServer, []},
       Sippet.child_spec(name: :mystack),
       Sippet.Transports.UDP.child_spec(name: :mystack, port: 5061)
     ]
@@ -18,8 +19,9 @@ defmodule XSip.Application do
     Sippet.register_core(:mystack, MyCore)
 
     spawn(fn ->
+      # Запускает процесс аутентификации
       :timer.sleep(1000)
-      SippetUtils.init_register()
+      SippetUtils.compose_register_request() |> SipServer.init_auth()
     end)
 
     r
