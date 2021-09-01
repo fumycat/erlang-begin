@@ -14,7 +14,8 @@ defmodule MyCore do
 
     case incoming_request.start_line.method do
       :invite ->
-        IO.puts("invite hmm") # TODO
+        IO.puts("invite hmm")
+        :ok = SipServer.invite(incoming_request)
 
       _ ->
         Logger.info("else")

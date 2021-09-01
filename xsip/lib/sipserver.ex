@@ -45,9 +45,25 @@ defmodule SipServer do
     {:reply, :ok, state}
   end
 
+  def handle_call({:invite, in_request}, _from, state) do
+    Logger.info("#{__MODULE__} call :invite")
+
+    ringing_response = Sippet.Message.to_response(in_request, 180)
+    Sippet.send(:mystack, ringing_response)
+
+    # System.cmd(File.cwd!() <> "/a.out", ["voice.wav", "192.168.0.100", "39996"])
+
+    ok_response = Sippet.Message.to_response(in_request, 200)
+    ok_response = ok_response |> Sdp.put_sdp(Sdp.mock_sdp())
+    Sippet.send(:mystack, ok_response)
+
+    {:reply, :ok, state}
+  end
+
   def start_link(state \\ []) do
     GenServer.start_link(__MODULE__, state, name: __MODULE__)
   end
 
   def init_auth(register_request), do: GenServer.call(__MODULE__, {:auth, register_request})
+  def invite(in_request), do: GenServer.call(__MODULE__, {:invite, in_request})
 end

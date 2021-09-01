@@ -6,23 +6,6 @@ defmodule SippetUtils do
   """
 
   @doc """
-    Меняет местами параметры, позволяя использовать pipe оператор |>.
-    Возвращает обратно message.
-  """
-  @spec send(Sippet.Message.t(), atom(), boolean()) :: Sippet.Message.t()
-  @deprecated "yikes"
-  def send(message, sippet, log \\ false) do
-    if log do
-      Logger.info("About to send this: " <> inspect(message, pretty: true))
-    end
-
-    Logger.info("Validation: " <> inspect(Sippet.Message.validate(message)))
-
-    :ok = Sippet.send(sippet, message)
-    message
-  end
-
-  @doc """
     Создает запрос регистрации. Все параметры берутся из ENV (см. mix.exs).
   """
   @spec compose_register_request() :: Sippet.Message.t()

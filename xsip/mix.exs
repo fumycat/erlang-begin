@@ -18,7 +18,7 @@ defmodule Xsip.MixProject do
       env: [
         host: "192.168.0.104",
         remote_host: "192.168.0.104",
-        port: 5061,
+        port: 15061,
         remote_port: 5060,
         username: "1001",
         secret: "1234"

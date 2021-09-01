@@ -10,7 +10,7 @@ defmodule XSip.Application do
     children = [
       {SipServer, []},
       Sippet.child_spec(name: :mystack),
-      Sippet.Transports.UDP.child_spec(name: :mystack, port: 5061)
+      Sippet.Transports.UDP.child_spec(name: :mystack, port: 15061)
     ]
 
     opts = [strategy: :one_for_one, name: XSip.Supervisor]
