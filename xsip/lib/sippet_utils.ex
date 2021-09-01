@@ -70,8 +70,11 @@ defmodule SippetUtils do
 
     IO.inspect(request)
 
+    Agent.start_link(fn -> request end, name: {:global, :ra})
+
     Sippet.send(:mystack, request)
 
-    # TODO этот реквест надо как-то сохранить и передать в MyCore
+    # TODO move this to a different module and remove agent
+
   end
 end
