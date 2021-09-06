@@ -24,3 +24,6 @@ xsip-*.tar
 
 # Temporary files, for example, from tests.
 /tmp/
+
+# rtp bin
+a.out

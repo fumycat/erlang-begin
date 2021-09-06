@@ -28,9 +28,7 @@ defmodule Sdp do
       [a, b] = String.split(x, "=")
       {String.to_atom(a), b}
     end)
-
   end
-
 
   @doc """
     Создает строку из keyword list с параметрами SDP.
@@ -43,11 +41,20 @@ defmodule Sdp do
   end
 
   @doc """
+    Вытаскивает порт из тела SDP.
+  """
+  @spec get_port_from_sdp(keyword()) :: integer()
+  def get_port_from_sdp(kvs) do
+    {p, _} = Keyword.get(kvs, :m) |> String.split() |> List.pop_at(1)
+    String.to_integer(p)
+  end
+
+  @doc """
     TODO
   """
   @spec mock_sdp() :: binary()
   def mock_sdp do
-    "v=0\r\no=Zoiper 1630120310317 1 IN IP4 192.168.0.104\r\ns=Z\r\nc=IN IP4 192.168.0.104\r\nt=0 0\r\nm=audio 52600 RTP/AVP 0 101 8 3\r\na=rtpmap:101 telephone-event/8000\r\na=fmtp:101 0-16\r\na=sendrecv\r\n"
+    "v=0\r\no=Zoiper 1630120310317 1 IN IP4 192.168.0.104\r\ns=Z\r\nc=IN IP4 192.168.0.104\r\nt=0 0\r\nm=audio 16414 RTP/AVP 0 101 8 3\r\na=rtpmap:101 telephone-event/8000\r\na=fmtp:101 0-16\r\na=sendrecv\r\n"
   end
 
   @doc """

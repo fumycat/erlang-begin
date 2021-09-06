@@ -48,10 +48,19 @@ defmodule SipServer do
   def handle_call({:invite, in_request}, _from, state) do
     Logger.info("#{__MODULE__} call :invite")
 
+    # trying_response = Sippet.Message.to_response(in_request, 100)
+    # Sippet.send(:mystack, trying_response)
+
     ringing_response = Sippet.Message.to_response(in_request, 180)
     Sippet.send(:mystack, ringing_response)
 
-    # System.cmd(File.cwd!() <> "/a.out", ["voice.wav", "192.168.0.100", "39996"])
+    # IO.puts("PORT")
+    # IO.inspect(Sdp.parse_sdp_body(in_request.body) |> Sdp.get_port_from_sdp())
+    port = Sdp.parse_sdp_body(in_request.body) |> Sdp.get_port_from_sdp()
+
+    Task.start(fn ->
+      System.cmd(File.cwd!() <> "/a.out", ["voice.wav", "192.168.0.104", "#{port}"])
+    end)
 
     ok_response = Sippet.Message.to_response(in_request, 200)
     ok_response = ok_response |> Sdp.put_sdp(Sdp.mock_sdp())
